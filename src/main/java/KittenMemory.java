@@ -14,11 +14,10 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.*;
 
 public class KittenMemory extends Application {
-    private final Logger LOG = LoggerFactory.getLogger(KittenMemory.class);
 
     private ImageTile firstTile = null, secondTile = null;
     private Label triesLabel = new Label("0");
@@ -38,18 +37,18 @@ public class KittenMemory extends Application {
         center.getChildren().add(imageView);
 
         ClickHandler clickHandler = new ClickHandler();
-        ImageTile[] tiles = {
 
-                new ImageTile(12, 400, "https://preview.redd.it/y67pg0npyuq61.jpg?width=640&crop=smart&auto=webp&s=6c23a382270e7ab1708be0032fce480e495f04d8"),
-                new ImageTile(300, 17, "https://preview.redd.it/y67pg0npyuq61.jpg?width=640&crop=smart&auto=webp&s=6c23a382270e7ab1708be0032fce480e495f04d8"),
-                new ImageTile(40, 207, "https://preview.redd.it/vagfg610bok61.jpg?width=640&crop=smart&auto=webp&s=452883f03258ad551f1591011a4f510e3a7d6b90"),
-                new ImageTile(589, 40,"https://preview.redd.it/vagfg610bok61.jpg?width=640&crop=smart&auto=webp&s=452883f03258ad551f1591011a4f510e3a7d6b90"),
-                new ImageTile(112, 600,"https://preview.redd.it/l7btbwlgmdl61.jpg?width=640&crop=smart&auto=webp&s=cdd8263eb0c7b1e4e67b10fa31e3191894c81719"),
-                new ImageTile(318, 145,"https://preview.redd.it/l7btbwlgmdl61.jpg?width=640&crop=smart&auto=webp&s=cdd8263eb0c7b1e4e67b10fa31e3191894c81719"),
-                new ImageTile(500, 305, "https://preview.redd.it/worxz7hz48i61.jpg?width=960&crop=smart&auto=webp&s=9ac9d14f81ef42975f32fb092f1f16990baf1f86"),
-                new ImageTile(219, 290,"https://preview.redd.it/worxz7hz48i61.jpg?width=960&crop=smart&auto=webp&s=9ac9d14f81ef42975f32fb092f1f16990baf1f86"),
+        String [] fileNames = {
+                "https://preview.redd.it/y67pg0npyuq61.jpg?width=640&crop=smart&auto=webp&s=6c23a382270e7ab1708be0032fce480e495f04d8",
+                "https://preview.redd.it/vagfg610bok61.jpg?width=640&crop=smart&auto=webp&s=452883f03258ad551f1591011a4f510e3a7d6b90",
+                "https://preview.redd.it/l7btbwlgmdl61.jpg?width=640&crop=smart&auto=webp&s=cdd8263eb0c7b1e4e67b10fa31e3191894c81719",
+                "https://preview.redd.it/worxz7hz48i61.jpg?width=960&crop=smart&auto=webp&s=9ac9d14f81ef42975f32fb092f1f16990baf1f86",
+                "https://www.reddit.com/r/cats/comments/12hgzhb/just_adopted_a_kitten_that_screams_at_me_every/",
+                "https://i.redd.it/dt44elu7cfnb1.jpg",
+                "https://i.redd.it/y4kgdt08ubka1.jpg",
         };
-        for(ImageTile tile : tiles){
+
+        for(ImageTile tile : getTiles(fileNames)){
             center.getChildren().add(tile);
             tile.setOnMouseClicked(clickHandler);
         }
@@ -76,8 +75,21 @@ public class KittenMemory extends Application {
     }
 
     //TODO: kom på ett sätt att randomiza vilka bilder som hamnar på vilken plats.
-    private ImageTile [] getTiles(String [] imageSources){
-        return null;
+    private ArrayList<ImageTile> getTiles(String [] imageSources){
+
+        List<String> temp = Arrays.asList(imageSources);
+        Collections.shuffle(temp);
+        imageSources = temp.toArray(new String[temp.size()]);
+
+        //TODO: fixa så x & y värden blir bra
+        int value = 5;
+        ArrayList<ImageTile> imageTiles = new ArrayList<>();
+        for(int i = 0; i < imageSources.length; i++){
+            imageTiles.add(new ImageTile(value, value, imageSources[i]));
+            imageTiles.add(new ImageTile(value + 80, value + 50, imageSources[i]));
+            value += 70;
+        }
+        return imageTiles;
     }
 
     class ClickHandler implements EventHandler<MouseEvent> {
