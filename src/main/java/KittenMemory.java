@@ -1,12 +1,12 @@
 package src.main.java;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -16,15 +16,22 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class KittenMemory extends Application {
 
+    private final Logger LOG = Logger.getLogger(KittenMemory.class.getName());
+    private final ClickHandler clickHandler = new ClickHandler();
     private ImageTile firstTile = null, secondTile = null;
-    private Label triesLabel = new Label("0");
-    private Label hitsLabel = new Label("0");
-
     private Pane center;
-    private int tries = 0, hits = 0;
+    private int tries = 0, found = 0, pairs = 0;
+
+    private final Label triesLabel = new Label("Tries: 0");
+    private final Label foundLabel = new Label();
+
+    private final Label resultLabel = new Label();
+    private final Button okButton = new Button("ok");
 
     @Override
     public void start(Stage stage) {
@@ -32,38 +39,29 @@ public class KittenMemory extends Application {
         center = new Pane();
         root.setCenter(center);
 
-        Image image = new Image("https://c4.wallpaperflare.com/wallpaper/581/460/967/nyan-cat-wallpaper-preview.jpg", 800, 700, false, true);
+        Image image = new Image("https://c4.wallpaperflare.com/wallpaper/581/460/967/nyan-cat-wallpaper-preview.jpg", 0, 0, false, true);
         ImageView imageView = new ImageView(image);
         center.getChildren().add(imageView);
 
-        ClickHandler clickHandler = new ClickHandler();
+        setUpMemory();
 
-        String [] fileNames = {
-                "https://preview.redd.it/y67pg0npyuq61.jpg?width=640&crop=smart&auto=webp&s=6c23a382270e7ab1708be0032fce480e495f04d8",
-                "https://preview.redd.it/vagfg610bok61.jpg?width=640&crop=smart&auto=webp&s=452883f03258ad551f1591011a4f510e3a7d6b90",
-                "https://preview.redd.it/l7btbwlgmdl61.jpg?width=640&crop=smart&auto=webp&s=cdd8263eb0c7b1e4e67b10fa31e3191894c81719",
-                "https://preview.redd.it/worxz7hz48i61.jpg?width=960&crop=smart&auto=webp&s=9ac9d14f81ef42975f32fb092f1f16990baf1f86",
-                "https://www.reddit.com/r/cats/comments/12hgzhb/just_adopted_a_kitten_that_screams_at_me_every/",
-                "https://i.redd.it/dt44elu7cfnb1.jpg",
-                "https://i.redd.it/y4kgdt08ubka1.jpg",
-        };
+        FlowPane top = new FlowPane();
+        top.setAlignment(Pos.CENTER_LEFT);
+        top.setHgap(10);
 
-        for(ImageTile tile : getTiles(fileNames)){
-            center.getChildren().add(tile);
-            tile.setOnMouseClicked(clickHandler);
-        }
+        top.getChildren().add(triesLabel);
+        top.getChildren().add(foundLabel);
+        setFoundLabelText();
+        root.setTop(top);
 
         FlowPane bottom = new FlowPane();
-        bottom.setAlignment(Pos.CENTER);
-        bottom.setVgap(5);
-        bottom.getChildren().add(new Label("Antal försök="));
-        bottom.getChildren().add(triesLabel);
-        bottom.getChildren().add(new Label("Antal träffar="));
-        bottom.getChildren().add(hitsLabel);
-        Button testaButton = new Button("Testa");
-        bottom.getChildren().add(testaButton);
+        bottom.setAlignment(Pos.CENTER_LEFT);
+        bottom.setHgap(10);
+        bottom.getChildren().add(resultLabel);
+        bottom.getChildren().add(okButton);
+        okButton.setVisible(false);
+        okButton.setOnAction(new FlipHandler());
         root.setBottom(bottom);
-        testaButton.setOnAction(new TestaHandler());
 
         Scene scene = new Scene(root);
         stage.setTitle("Kitten Memory");
@@ -74,56 +72,134 @@ public class KittenMemory extends Application {
         imageView.fitHeightProperty().bind(center.heightProperty());
     }
 
-    //TODO: kom på ett sätt att randomiza vilka bilder som hamnar på vilken plats.
-    private ArrayList<ImageTile> getTiles(String [] imageSources){
+    private void setUpMemory(){
+        tries = 0;
+        found = 0;
 
-        List<String> temp = Arrays.asList(imageSources);
-        Collections.shuffle(temp);
-        imageSources = temp.toArray(new String[temp.size()]);
+        String[] imageNames = {
+                "https://preview.redd.it/y67pg0npyuq61.jpg?width=640&crop=smart&auto=webp&s=6c23a382270e7ab1708be0032fce480e495f04d8",
+                "https://preview.redd.it/vagfg610bok61.jpg?width=640&crop=smart&auto=webp&s=452883f03258ad551f1591011a4f510e3a7d6b90",
+                "https://preview.redd.it/worxz7hz48i61.jpg?width=960&crop=smart&auto=webp&s=9ac9d14f81ef42975f32fb092f1f16990baf1f86",
+                "https://i.redd.it/dt44elu7cfnb1.jpg",
+                "https://i.redd.it/y4kgdt08ubka1.jpg",
 
-        //TODO: fixa så x & y värden blir bra
-        int value = 5;
+                "https://preview.redd.it/y67pg0npyuq61.jpg?width=640&crop=smart&auto=webp&s=6c23a382270e7ab1708be0032fce480e495f04d8",
+                "https://preview.redd.it/vagfg610bok61.jpg?width=640&crop=smart&auto=webp&s=452883f03258ad551f1591011a4f510e3a7d6b90",
+                "https://preview.redd.it/worxz7hz48i61.jpg?width=960&crop=smart&auto=webp&s=9ac9d14f81ef42975f32fb092f1f16990baf1f86",
+                "https://i.redd.it/dt44elu7cfnb1.jpg",
+                "https://i.redd.it/y4kgdt08ubka1.jpg",
+        };
+
+        pairs = imageNames.length/2;
+
+        Integer[][] coordinates = {
+                {5, 5},     //0
+                {15, 450},  //1
+                {30, 200},  //2
+                {200, 50},  //3
+                {325, 250}, //4
+                {375, 400}, //5
+                {550, 400}, //6
+                {450, 5},   //7
+                {475, 150}, //8
+                {175, 300}  //9
+        };
+
         ArrayList<ImageTile> imageTiles = new ArrayList<>();
-        for(int i = 0; i < imageSources.length; i++){
-            imageTiles.add(new ImageTile(value, value, imageSources[i]));
-            imageTiles.add(new ImageTile(value + 80, value + 50, imageSources[i]));
-            value += 70;
+        ArrayList<String> shuffledImages = new ArrayList<>(Arrays.asList(imageNames));
+        Collections.shuffle(shuffledImages);
+        imageNames = shuffledImages.toArray(new String[0]);
+
+        for (int i = 0; i < imageNames.length; i++) {
+            imageTiles.add(new ImageTile(coordinates[i][0], coordinates[i][1], imageNames[i]));
         }
-        return imageTiles;
+
+        for (ImageTile tile : imageTiles) {
+            center.getChildren().add(tile);
+            tile.setOnMouseClicked(clickHandler);
+        }
+        setTriesLabelText();
+        setFoundLabelText();
+    }
+
+    private void setFoundLabelText(){
+        foundLabel.setText("Found: " + found + "/" + pairs + " pairs");
+    }
+    private void setTriesLabelText(){
+        triesLabel.setText("Tries: " + tries);
     }
 
     class ClickHandler implements EventHandler<MouseEvent> {
         @Override
         public void handle(MouseEvent event) {
-            ImageTile tile = (ImageTile)event.getSource();
-            if(firstTile == null) {
+            ImageTile tile = (ImageTile) event.getSource();
+
+            if (tile == firstTile) {
+                return;
+            }
+
+            LOG.log(Level.INFO, "coordinates: " + tile.getX() + ", " + tile.getY());
+
+            if (firstTile == null) {
+
                 firstTile = tile;
                 firstTile.setCovered(false);
-            }
-            else if(secondTile == null && tile != firstTile) {
+
+            } else if (secondTile == null) {
                 secondTile = tile;
                 secondTile.setCovered(false);
-            }
-        }
-    }
-    class TestaHandler implements EventHandler<ActionEvent> {
-        @Override
-        public void handle(ActionEvent event) {
-            if (firstTile != null && secondTile != null) {
+                okButton.setVisible(true);
+
                 if (firstTile.isMatch(secondTile)) {
-                    center.getChildren().remove(firstTile);
-                    center.getChildren().remove(secondTile);
-                    hits++;
-                    hitsLabel.setText(""+hits);
+                    String match = "You found a pair!";
+                    resultLabel.setText(match);
+                } else {
+                    String notMatch = "Try again!";
+                    resultLabel.setText(notMatch);
                 }
-                else {
-                    firstTile.setCovered(true);
-                    secondTile.setCovered(true);
-                }
-                tries++;
-                triesLabel.setText(""+tries);
-                firstTile = secondTile = null;
             }
         }
     }
-}
+
+         class FlipHandler implements EventHandler<ActionEvent> {
+            @Override
+            public void handle(ActionEvent event) {
+                if (firstTile != null && secondTile != null) {
+                    if (firstTile.isMatch(secondTile)) {
+                        center.getChildren().remove(firstTile);
+                        center.getChildren().remove(secondTile);
+                        found++;
+                        foundLabel.setText("" + found);
+                    } else {
+                        firstTile.setCovered(true);
+                        secondTile.setCovered(true);
+                    }
+                    tries++;
+                    triesLabel.setText("" + tries);
+                    firstTile = secondTile = null;
+                    okButton.setVisible(false);
+                    resultLabel.setText("");
+                }
+
+                if(found == 1){
+                    final Dialog<String> playAgainDialog = new Dialog<>();
+                    playAgainDialog.setTitle("Play Again");
+                    playAgainDialog.setContentText("You won!");
+                    playAgainDialog.getDialogPane().getButtonTypes().add(new ButtonType("Play again", ButtonBar.ButtonData.OK_DONE));
+                    playAgainDialog.getDialogPane().getButtonTypes().add(new ButtonType("Exit game", ButtonBar.ButtonData.CANCEL_CLOSE));
+                    playAgainDialog.setResultConverter(ButtonType::getText);
+                    String result =  playAgainDialog.showAndWait().orElse(null);
+                    if(Objects.equals(result, "Play again")){
+                        setUpMemory();
+                    } else{
+                        Platform.exit();
+                    }
+                }
+            }
+        }
+    }
+
+//TODO: JUnit tests för:
+// - listorna -> lika långa
+// - imageList -> duplicates
+// -
