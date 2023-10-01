@@ -5,8 +5,7 @@ A small one player memory game made with JavaFx.
 ## How to Win
 
 The goal is to remove all tiles to win the game.  
-
-![](resources/memory_win.png)
+<img src="resources/memory_win.png" width="100"
 
 ## How to Play
 ![](resources/start_image.png)  
