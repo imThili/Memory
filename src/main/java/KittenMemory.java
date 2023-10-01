@@ -23,15 +23,15 @@ public class KittenMemory extends Application {
 
     private final Logger LOG = Logger.getLogger(KittenMemory.class.getName());
     private final ClickHandler clickHandler = new ClickHandler();
-    private ImageTile firstTile = null, secondTile = null;
-    private Pane center;
-    private int tries = 0, found = 0, pairs = 0;
 
-    private final Label triesLabel = new Label("Tries: 0");
+    private final Label triesLabel = new Label();
     private final Label foundLabel = new Label();
-
     private final Label resultLabel = new Label();
     private final Button okButton = new Button("ok");
+
+    private ImageTile firstTile = null, secondTile = null;
+    private Pane center;
+    private int tries, found, pairs;
 
     @Override
     public void start(Stage stage) {
@@ -43,8 +43,6 @@ public class KittenMemory extends Application {
         ImageView imageView = new ImageView(image);
         center.getChildren().add(imageView);
 
-        setUpMemory();
-
         FlowPane top = new FlowPane();
         top.setAlignment(Pos.CENTER_LEFT);
         top.setHgap(10);
@@ -55,6 +53,7 @@ public class KittenMemory extends Application {
         root.setTop(top);
 
         FlowPane bottom = new FlowPane();
+        bottom.setPrefSize(30, 40);
         bottom.setAlignment(Pos.CENTER_LEFT);
         bottom.setHgap(10);
         bottom.getChildren().add(resultLabel);
@@ -62,6 +61,8 @@ public class KittenMemory extends Application {
         okButton.setVisible(false);
         okButton.setOnAction(new FlipHandler());
         root.setBottom(bottom);
+
+        setUpMemory();
 
         Scene scene = new Scene(root);
         stage.setTitle("Kitten Memory");
@@ -72,11 +73,9 @@ public class KittenMemory extends Application {
         imageView.fitHeightProperty().bind(center.heightProperty());
     }
 
-    private void setUpMemory(){
-        tries = 0;
-        found = 0;
+    public void setUpMemory() {
 
-        String[] imageNames = {
+        String[] imageNames = new String[]{
                 "https://preview.redd.it/y67pg0npyuq61.jpg?width=640&crop=smart&auto=webp&s=6c23a382270e7ab1708be0032fce480e495f04d8",
                 "https://preview.redd.it/vagfg610bok61.jpg?width=640&crop=smart&auto=webp&s=452883f03258ad551f1591011a4f510e3a7d6b90",
                 "https://preview.redd.it/worxz7hz48i61.jpg?width=960&crop=smart&auto=webp&s=9ac9d14f81ef42975f32fb092f1f16990baf1f86",
@@ -90,9 +89,9 @@ public class KittenMemory extends Application {
                 "https://i.redd.it/y4kgdt08ubka1.jpg",
         };
 
-        pairs = imageNames.length/2;
+        pairs = imageNames.length / 2;
 
-        Integer[][] coordinates = {
+        Integer[][] coordinates = new Integer[][]{
                 {5, 5},     //0
                 {15, 450},  //1
                 {30, 200},  //2
@@ -118,14 +117,17 @@ public class KittenMemory extends Application {
             center.getChildren().add(tile);
             tile.setOnMouseClicked(clickHandler);
         }
+        tries = 0;
+        found = 0;
         setTriesLabelText();
         setFoundLabelText();
     }
 
-    private void setFoundLabelText(){
+    private void setFoundLabelText() {
         foundLabel.setText("Found: " + found + "/" + pairs + " pairs");
     }
-    private void setTriesLabelText(){
+
+    private void setTriesLabelText() {
         triesLabel.setText("Tries: " + tries);
     }
 
@@ -161,45 +163,44 @@ public class KittenMemory extends Application {
         }
     }
 
-         class FlipHandler implements EventHandler<ActionEvent> {
-            @Override
-            public void handle(ActionEvent event) {
-                if (firstTile != null && secondTile != null) {
-                    if (firstTile.isMatch(secondTile)) {
-                        center.getChildren().remove(firstTile);
-                        center.getChildren().remove(secondTile);
-                        found++;
-                        foundLabel.setText("" + found);
-                    } else {
-                        firstTile.setCovered(true);
-                        secondTile.setCovered(true);
-                    }
-                    tries++;
-                    triesLabel.setText("" + tries);
-                    firstTile = secondTile = null;
-                    okButton.setVisible(false);
-                    resultLabel.setText("");
+    class FlipHandler implements EventHandler<ActionEvent> {
+        @Override
+        public void handle(ActionEvent event) {
+            if (firstTile != null && secondTile != null) {
+                if (firstTile.isMatch(secondTile)) {
+                    center.getChildren().remove(firstTile);
+                    center.getChildren().remove(secondTile);
+                    found++;
+                    foundLabel.setText("" + found);
+                } else {
+                    firstTile.setCovered(true);
+                    secondTile.setCovered(true);
                 }
+                tries++;
+                triesLabel.setText("" + tries);
+                firstTile = secondTile = null;
+                okButton.setVisible(false);
+                resultLabel.setText("");
+            }
 
-                if(found == 1){
-                    final Dialog<String> playAgainDialog = new Dialog<>();
-                    playAgainDialog.setTitle("Play Again");
-                    playAgainDialog.setContentText("You won!");
-                    playAgainDialog.getDialogPane().getButtonTypes().add(new ButtonType("Play again", ButtonBar.ButtonData.OK_DONE));
-                    playAgainDialog.getDialogPane().getButtonTypes().add(new ButtonType("Exit game", ButtonBar.ButtonData.CANCEL_CLOSE));
-                    playAgainDialog.setResultConverter(ButtonType::getText);
-                    String result =  playAgainDialog.showAndWait().orElse(null);
-                    if(Objects.equals(result, "Play again")){
-                        setUpMemory();
-                    } else{
-                        Platform.exit();
-                    }
-                }
+            if (found == pairs) {
+                showPlayAgainDialog();
+            }
+        }
+
+        private void showPlayAgainDialog() {
+            final Dialog<String> playAgainDialog = new Dialog<>();
+            playAgainDialog.setTitle("Play Again");
+            playAgainDialog.setContentText("You won!");
+            playAgainDialog.getDialogPane().getButtonTypes().add(new ButtonType("Play again", ButtonBar.ButtonData.OK_DONE));
+            playAgainDialog.getDialogPane().getButtonTypes().add(new ButtonType("Exit game", ButtonBar.ButtonData.CANCEL_CLOSE));
+            playAgainDialog.setResultConverter(ButtonType::getText);
+            String result = playAgainDialog.showAndWait().orElse(null);
+            if (Objects.equals(result, "Play again")) {
+                setUpMemory();
+            } else {
+                Platform.exit();
             }
         }
     }
-
-//TODO: JUnit tests för:
-// - listorna -> lika långa
-// - imageList -> duplicates
-// -
+}
