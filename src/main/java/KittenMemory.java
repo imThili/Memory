@@ -49,11 +49,10 @@ public class KittenMemory extends Application {
 
         top.getChildren().add(triesLabel);
         top.getChildren().add(foundLabel);
-        setFoundLabelText();
         root.setTop(top);
 
         FlowPane bottom = new FlowPane();
-        bottom.setPrefSize(30, 40);
+        bottom.setPrefSize(20, 20);
         bottom.setAlignment(Pos.CENTER_LEFT);
         bottom.setHgap(10);
         bottom.getChildren().add(resultLabel);
@@ -155,6 +154,7 @@ public class KittenMemory extends Application {
                 if (firstTile.isMatch(secondTile)) {
                     String match = "You found a pair!";
                     resultLabel.setText(match);
+                    found++;
                 } else {
                     String notMatch = "Try again!";
                     resultLabel.setText(notMatch);
@@ -170,14 +170,13 @@ public class KittenMemory extends Application {
                 if (firstTile.isMatch(secondTile)) {
                     center.getChildren().remove(firstTile);
                     center.getChildren().remove(secondTile);
-                    found++;
-                    foundLabel.setText("" + found);
                 } else {
                     firstTile.setCovered(true);
                     secondTile.setCovered(true);
                 }
                 tries++;
-                triesLabel.setText("" + tries);
+                triesLabel.setText("Tries: " + tries);
+                foundLabel.setText("Found: " + found + "/" + pairs + " pairs");
                 firstTile = secondTile = null;
                 okButton.setVisible(false);
                 resultLabel.setText("");
